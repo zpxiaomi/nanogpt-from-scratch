@@ -11,9 +11,9 @@ print("Length of dataset in chracters: ", len(text))
 
 # get all unique characters in the story file
 chars = sorted(list(set(text)))
-vacab_size = len(chars)
+vocab_size = len(chars)
 print(''.join(chars))
-print(vacab_size) 
+print(vocab_size) 
 
 # use a simple mapping as encoding /decoding Alg, string to position or vice versa
 
@@ -79,3 +79,52 @@ for b in range(batch_size):
         target = yb[b, t]
         print(f"when input is {context} the target is {target}")
 
+
+import torch.nn as nn
+from torch.nn import functional as F
+torch.manual_seed(1337)
+
+class BigramLanguageModel(nn.Module):
+
+    def __init__(self, vocab_size):
+        super().__init__()
+        # create a table of size vocab_size * vocab_size, each token directly reads off logits for the next token from a lookup table
+        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
+
+    def forward(self, idx, targets=None):
+        # idx and targets are both (B,T) tensor of integers. We make prediction about next token based on a individual identity of a single token
+        logits = self.token_embedding_table(idx) #(B, T, C), B is batch_size, T is time = block_size , C is channel = vocab_size
+
+        if targets is None:
+            loss = None
+        else:
+            # calculate the loss
+            B,T,C = logits.shape
+            logits = logits.view(B*T, C)
+            targets = targets.view(B*T)
+            loss = F.cross_entropy(logits, targets)
+
+        return logits, loss
+    
+    def generate(self, idx, max_new_tokens):
+        # idx is (B, T) array of indices in current context
+        for _ in range(max_new_tokens):
+            # get predictions
+            logits, loss = self(idx)
+            # focus on last time step
+            logits = logits[:,-1,:] # becomes (B, C)
+            # apply softmax
+            probs = F.softmax(logits, dim=-1) # (B, C)
+            # sample from the distribution
+            idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+            idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
+        return idx
+    
+m = BigramLanguageModel(vocab_size)
+logits, loss = m(xb, yb)
+# print the prediction shape
+#print(logits.shape)
+# print(loss)
+
+idx = torch.zeros((1,1), dtype = torch.long)
+print(decode(m.generate(idx, max_new_tokens=100)[0].tolist()))
