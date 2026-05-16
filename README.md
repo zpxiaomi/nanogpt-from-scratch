@@ -2,6 +2,10 @@
 
 A from-scratch implementation of a GPT language model in Python, built by following along with Andrej Karpathy's tutorial.
 
+## Goal
+
+Train a character-level language model on a given text corpus so that it can generate new text that resembles the style and content of the original input — coherent enough to feel like it belongs, even if not perfectly meaningful.
+
 ## Attribution
 
 This project is based on the video:
