@@ -1,0 +1,101 @@
+Bigram Language Model — Q&A Review
+===================================
+
+1. What does logits.view(B*T, C) do?
+
+       logits = logits.view(B*T, C)
+
+   Flattens the batch (B) and time (T) dimensions into one axis so
+   that F.cross_entropy receives a 2D input (N, C) where N = B*T.
+
+   Before: (B, T, C) e.g. (2, 3, 4)
+   After:  (B*T, C)  e.g. (6, 4)
+
+   Every token prediction across all batches becomes its own row.
+   targets are also flattened to (B*T,) so each row of logits maps
+   to the correct target token.
+
+2. What is idx? Is it the embedding values?
+
+       logits = self.token_embedding_table(idx)  # line 96
+
+   No. idx is a (B, T) tensor of integer token IDs — plain integers.
+   The embeddings are the result of looking up those IDs in the table.
+
+   idx = input (indices), logits = output (vectors).
+
+3. What does logits[:, -1, :] do?
+
+       logits = logits[:, -1, :]  # becomes (B, C)
+
+   Slices the 3D (B, T, C) tensor to keep only the last time step
+   for every batch, resulting in shape (B, C).
+
+   During generation we only predict the very next token after the
+   full sequence, so we only need the prediction at position T-1.
+
+4. What do torch.multinomial and torch.cat do?
+
+       idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
+       idx = torch.cat((idx, idx_next), dim=1)             # (B, T+1)
+
+   multinomial: weighted random draw from the probability
+   distribution for each batch. Result shape: (B, 1).
+
+   cat: appends the newly sampled token to the existing sequence
+   along the time axis. Sequence grows from (B, T) to (B, T+1).
+
+5. What do lines 129-130 do?
+
+       idx = torch.zeros((1,1), dtype=torch.long)
+       print(decode(m.generate(idx, max_new_tokens=100)[0].tolist()))
+
+   Creates a seed tensor: B=1, T=1, filled with token ID 0 ('\n').
+   Generates 100 new tokens from that single seed, decodes and prints.
+   [0] selects the first batch, .tolist() converts to a Python list.
+
+6. What is a PyTorch optimizer?
+
+   The algorithm that updates model parameters to reduce loss.
+   Typical flow:
+
+       optimizer.zero_grad()   # clear old gradients
+       loss.backward()          # compute gradients
+       optimizer.step()         # apply gradients to update weights
+
+   Common: torch.optim.Adam(m.parameters(), lr=1e-3)
+   m.parameters() gives the optimizer access to all learnable weights.
+
+7. Why does idx (B, T) -> logits (B, T, C)?
+
+       logits = self.token_embedding_table(idx)  # line 96
+
+   nn.Embedding works as a lookup table. Each integer token ID is
+   replaced by its corresponding vector of size C. The output shape
+   is the input shape with C appended at the end:
+
+       (B, T)  ->  (B, T, C)
+
+   The first two dimensions are preserved, C becomes the new last dim.
+
+8. How are the embedding table vectors initialized?
+
+       self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
+
+   nn.Embedding initializes weights randomly using a normal distribution
+   (mean=0, std=1). The (65, 65) table starts as random noise — the
+   model has no useful knowledge yet. The optimizer adjusts these values
+   during training.
+
+9. Do embedding rows sum to 1? Why are there negative values?
+
+       probs = F.softmax(logits, dim=-1)  # line 117 (generate)
+       loss = F.cross_entropy(logits, targets)  # line 104 (training)
+
+   No. The embedding table stores raw logits (unnormalized scores),
+   not probabilities. Values can be positive, negative, anything.
+   Softmax is applied later to convert logits into probabilities:
+   - In generate(): softmax is called explicitly -> sums to 1
+   - In training: cross_entropy applies softmax internally
+   Negative values mean "this token is unlikely to follow" relative
+   to positive ones.
