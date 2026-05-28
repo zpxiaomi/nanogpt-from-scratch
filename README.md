@@ -19,7 +19,25 @@ https://www.youtube.com/watch?v=kCc8FmEb1nY
 - `tokenizer.py` — character-level tokenizer and dataset preparation
 - `model.py` — GPT model definition
 - `train.py` — training loop
+- `run.py` — Modal entrypoint for remote GPU training (see below)
 - `data/` — training text data
+
+## Remote Training with Modal
+
+Training is run on [Modal](https://modal.com) to access GPU hardware (A100). `run.py` defines the Modal app that:
+
+1. Builds a remote image with the required dependencies (`torch`, `numpy`) and uploads the training script and data.
+2. Runs the training script on an A100 GPU with a 30-minute timeout.
+3. Returns the saved checkpoint (`checkpoint_step3000.pt`) back to your local machine.
+
+To run training remotely:
+
+```bash
+pip install modal
+modal run run.py
+```
+
+The checkpoint will be saved locally as `checkpoint_step3000.pt` after the run completes.
 
 ## Setup
 
