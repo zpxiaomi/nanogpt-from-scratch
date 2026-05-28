@@ -28,7 +28,6 @@ env/
 *.log
 runs/
 out/
-output/
 
 # OS
 .DS_Store
