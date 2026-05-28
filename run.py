@@ -4,7 +4,7 @@ app = modal.App("nanogpt-from-scratch")
 image = (
     modal.Image.debian_slim()
     .pip_install("torch", "numpy")
-    .add_local_file("transformer_notebook.py", "/root/transformer_notebook.py")
+    .add_local_file("gpt.py", "/root/gpt.py")
     .add_local_file("data/faust_combined.txt", "/root/data/faust_combined.txt")
 )
 
@@ -12,7 +12,7 @@ image = (
 def train():
     import subprocess, os
     os.chdir("/root")
-    subprocess.run(["python", "-u", "/root/transformer_notebook.py"], check=True)
+    subprocess.run(["python", "-u", "/root/gpt.py"], check=True)
 
     # return the checkpoint bytes back to your laptop
     with open("/root/checkpoint_step3000.pt", "rb") as f:
