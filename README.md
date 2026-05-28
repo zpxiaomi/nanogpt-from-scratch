@@ -16,11 +16,13 @@ https://www.youtube.com/watch?v=kCc8FmEb1nY
 
 ## Project Structure
 
-- `tokenizer.py` — character-level tokenizer and dataset preparation
-- `model.py` — GPT model definition
-- `train.py` — training loop
+- `bigram.py` — initial bigram language model implementation
+- `bigram_notebook.py` — annotated notebook-style version of the bigram model
+- `model.py` — GPT model definition, hyperparameters, vocab, and decode helper
+- `gpt.py` — full transformer training script (runs via `python gpt.py`)
+- `inference.py` — load a saved checkpoint and generate text
 - `run.py` — Modal entrypoint for remote GPU training (see below)
-- `data/` — training text data
+- `data/` — training text corpus (Goethe's Faust)
 
 ## Remote Training with Modal
 
