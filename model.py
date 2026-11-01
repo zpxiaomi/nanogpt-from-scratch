@@ -39,6 +39,7 @@ class Head(nn.Module):
         wei = (q @ k.transpose(-2, -1)) * k.size(-1)**-0.5
         wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
         wei = F.softmax(wei, dim=-1)
+        wei = self.dropout(wei)
         v = self.value(x)
         return wei @ v
 
@@ -53,7 +54,7 @@ class MultiHeadAttention(nn.Module):
 
     def forward(self, x):
         out = torch.cat([h(x) for h in self.heads], dim=-1)
-        return self.proj(out)
+        return self.dropout(self.proj(out))
 
 
 class FeedForward(nn.Module):
