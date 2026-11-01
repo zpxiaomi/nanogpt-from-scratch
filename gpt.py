@@ -209,6 +209,7 @@ class GPTLanguageModel(nn.Module):
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
         self.postion_embedding_table = nn.Embedding(block_size, n_embd)
+        self.drop = nn.Dropout(dropout) # embedding dropout
         self.blocks = nn.Sequential(*[Block(n_embd, n_head=n_head) for _ in range(n_layer)])
         self.ln_f = nn.LayerNorm(n_embd) # final Layernorm
         self.lm_head = nn.Linear(n_embd, vocab_size)
@@ -218,8 +219,9 @@ class GPTLanguageModel(nn.Module):
         # idx and targets are both (B,T) tensor of integers
         token_emb = self.token_embedding_table(idx) # (B,T,C)
         pos_emb = self.postion_embedding_table(torch.arange(T, device=device)) # (T,C)
-        x = token_emb + pos_emb # (B,T,C)
+        x = self.drop(token_emb + pos_emb) # (B,T,C)
         x = self.blocks(x) # apply multiple blocks
+        x = self.ln_f(x) # (B,T,C)
         logits = self.lm_head(x) # (B,T,vocab_size)
 
         if targets is None:
