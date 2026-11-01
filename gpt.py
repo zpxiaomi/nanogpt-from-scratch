@@ -279,9 +279,11 @@ if __name__ == '__main__':
         loss.backward()
         optimizer.step()
 
-    # generate from the model
+    # generate from the model (eval mode disables dropout, no_grad skips autograd)
+    model.eval()
     context = torch.zeros((1, 1), dtype=torch.long, device=device)
-    print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
+    with torch.no_grad():
+        print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
 
 # k = torch.randn(B, T,  head_size)
 # q = torch.randn(B, T,  head_size)
